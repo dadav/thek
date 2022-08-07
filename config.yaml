@@ -1,0 +1,25 @@
+---
+defaults:
+  output_directory: output
+  safety_duration: 5m
+
+stations:
+  3sat: "http://zdf-hls-18.akamaized.net/hls/live/2016501/dach/high/master.m3u8"
+  arte: "https://artesimulcast.akamaized.net/hls/live/2030993/artelive_de/index.m3u8"
+  zdf: "http://zdf-hls-15.akamaized.net/hls/live/2016498/de/high/master.m3u8"
+  zdfinfo: "http://zdf-hls-17.akamaized.net/hls/live/2016500/de/high/master.m3u8"
+  zdfneo: "http://zdf-hls-16.akamaized.net/hls/live/2016499/de/high/master.m3u8"
+  phoenix: "http://zdf-hls-19.akamaized.net/hls/live/2016502/de/high/master.m3u8"
+  ki.ka: "https://kikageohls.akamaized.net/hls/live/2022693/livetvkika_de/master.m3u8"
+
+recording_tasks:
+  - station: zdfneo
+    show_keywords: Psych
+    output_directory: ./output/psych
+    safety_duration: 5m
+  - show_keywords: glorreichen
+    output_directory: output/test
+    safety_duration: 5m
+  - show_keywords: Akte UFO
+    output_directory: output/test
+    safety_duration: 5m

@@ -1,0 +1,9 @@
+[Unit]
+Description=Thek daemon
+
+[Service]
+ExecStart=/usr/local/bin/thek -config /etc/thek/config.yaml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
