@@ -47,10 +47,7 @@ stations:
 
 recording_tasks:
   - station: zdfneo
-    show_keywords: psych
-    output_directory: ./output/psych
-    safety_duration: 5m
-  - show_keywords: test
-    output_directory: output/test
-    safety_duration: 5m
+    show_keywords: the rookie
+    output_directory: ./output/the_rookie
+    safety_duration: 3m
 ```
