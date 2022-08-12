@@ -17,3 +17,4 @@ recording_tasks:
     show_keywords: the rookie
     output_directory: ./output/the_rookie
     safety_duration: 3m
+    skip_if_exist: true

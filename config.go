@@ -44,6 +44,8 @@ type Config struct {
     SafetyDuration string `yaml:"safety_duration,omitempty"`
     // OutputDir overwrites Defaults.DefaultOutputDir
     OutputDir string `yaml:"output_directory,omitempty"`
+    // SkipIfExist skips the recording if the file already exist
+    SkipIfExist bool `yaml:"skip_if_exist,omitempty"`
   } `yaml:"recording_tasks"`
 }
 
