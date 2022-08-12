@@ -116,21 +116,24 @@ func WatchStreams() error {
                 if now.After(showStart) && now.Before(showEnd) {
                   uniqueKey = fmt.Sprintf("%s_incomplete", uniqueKey)
                   if _, ok := scheduled[uniqueKey]; !ok {
-                    showDuration := showEnd.Sub(now)
+                    showDuration = showEnd.Sub(now)
                     // Currently Running; but not yet started to record
-                    go func() {
-                      RecordVideo(stationData.StreamURL, out, showDuration)
-                    }()
+                    go func(url, outFile string, duration time.Duration) {
+                      RecordVideo(url, outFile, duration)
+                    }(stationData.StreamURL, out, showDuration)
                     scheduled[uniqueKey] = true
                     log.Infof("Started recording of \"%s (%s)\"\n", show.Name, show.SubTitle)
                   }
                 } else if now.Before(showStart) {
                   // There is still some time left, sleep, then record
                   sleepTime := showStart.Sub(now)
-                  go func() {
+
+                  go func(url, outFile, showName, subTitle string, duration time.Duration) {
                     time.Sleep(sleepTime)
-                    RecordVideo(stationData.StreamURL, out, showDuration)
-                  }()
+                    RecordVideo(url, outFile, duration)
+                    log.Infof("Started recording of \"%s (%s)\"\n", showName, subTitle)
+                  }(stationData.StreamURL, out, show.Name, show.SubTitle, showDuration)
+
                   log.Infof("Scheduled recording of \"%s (%s)\"\n", show.Name, show.SubTitle)
                   scheduled[uniqueKey] = true
                 }
