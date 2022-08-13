@@ -1,6 +1,6 @@
 .PHONY: build
 build:
-	go build -o thek .
+	go build -o thek
 
 .PHONY: buildarm64
 buildarm64:
