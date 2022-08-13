@@ -35,6 +35,7 @@ $ thek -h
 defaults:
   output_directory: output
   safety_duration: 5m
+  file_exist_action: skip  # possible actions: skip | rename | replace
 
 stations:
   3sat: "http://zdf-hls-18.akamaized.net/hls/live/2016501/dach/high/master.m3u8"
@@ -50,4 +51,5 @@ recording_tasks:
     show_keywords: the rookie
     output_directory: ./output/the_rookie
     safety_duration: 3m
+    file_exist_action: replace
 ```

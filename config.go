@@ -29,6 +29,8 @@ type Config struct {
     DefaultOutputDir string `yaml:"output_directory"`
     // DefaultSafetyDuration is the time before and after a video
     DefaultSafetyDuration string `yaml:"safety_duration"`
+    // DefaultFileExistAction is the action in case a file already exist
+    DefaultFileExistAction string `yaml:"file_exist_action"`
   } `yaml:"defaults"`
 
   // StationURLS is a station to stream mapping
@@ -44,8 +46,8 @@ type Config struct {
     SafetyDuration string `yaml:"safety_duration,omitempty"`
     // OutputDir overwrites Defaults.DefaultOutputDir
     OutputDir string `yaml:"output_directory,omitempty"`
-    // SkipIfExist skips the recording if the file already exist
-    SkipIfExist bool `yaml:"skip_if_exist,omitempty"`
+    // FileExistAction overwrites Defaults.DefaultFileExistAction
+    FileExistAction string `yaml:"file_exist_action"`
   } `yaml:"recording_tasks"`
 }
 

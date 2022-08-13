@@ -110,13 +110,24 @@ func WatchStreams() error {
 
                 out := filepath.Join(outDir, fmt.Sprintf("%s_-_%s.mkv", slug.Make(show.Name), slug.Make(show.SubTitle)))
                 if _, err := os.Stat(out); err == nil {
-                  if req.SkipIfExist {
+                  existAction := config.Defaults.DefaultFileExistAction
+                  if req.FileExistAction != "" {
+                    existAction = req.FileExistAction
+                  }
+
+                  if existAction == "skip" {
+                    log.Warnf("%s already exists, skipping\n", out)
+                    continue
+                  } else if existAction == "rename" {
+                    old := out
+                    out = filepath.Join(outDir, fmt.Sprintf("%s_-_%s_%d.mkv", slug.Make(show.Name), slug.Make(show.SubTitle), time.Now().Unix()))
+                    log.Warnf("%s already exists, using %s instead\n", old, out)
+                  } else if existAction == "replace" {
+                    log.Warnf("%s already exists, but will be replaced\n", out)
+                  } else {
+                    log.Warnf("%s already exists, but an unknown action was specified. Skipping\n", out)
                     continue
                   }
-                  old := out
-                  out = filepath.Join(outDir, fmt.Sprintf("%s_-_%s_%d.mkv", slug.Make(show.Name), slug.Make(show.SubTitle), time.Now().Unix()))
-                  log.Warnf("%s already exists, using %s instead\n", old, out)
-
                 }
 
                 if now.After(showStart) && now.Before(showEnd) {
