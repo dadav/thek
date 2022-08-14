@@ -142,10 +142,10 @@ func WatchStreams() error {
                   sleepTime := showStart.Sub(now)
                   go func(url, outFile, showName, subTitle string, duration time.Duration) {
                     time.Sleep(sleepTime)
+                    log.Infof("Starting recording of \"%s (%s)\"\n", showName, subTitle)
                     RecordVideo(url, outFile, duration)
-                    log.Infof("Started recording of \"%s (%s)\"\n", showName, subTitle)
                   }(stationData.StreamURL, out, show.Name, show.SubTitle, showDuration)
-                  log.Infof("Scheduled recording of \"%s (%s)\"\n", show.Name, show.SubTitle)
+                  log.Infof("Scheduled recording of \"%s (%s)\". Starts in %s\n", show.Name, show.SubTitle, sleepTime)
                 }
               }
             }
