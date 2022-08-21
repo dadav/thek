@@ -9,7 +9,7 @@ import (
 
 const (
   // Version is the current version of this tool
-  Version = "0.3.0"
+  Version = "0.4.0"
 )
 
 func main() {

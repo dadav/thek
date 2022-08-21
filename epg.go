@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,24 +21,24 @@ const (
   EpgDescriptionURL = "https://www.zdf.de%s"
 )
 
-// StationMap maps the stations to the coresponding data
-type StationMap struct {
-  Stations map[string]StationData
-  Dates map[string]bool
+// StationController holds the station array
+type StationController struct {
+  Stations []*Station
 }
 
-// StationData contains informations about the station
-type StationData struct {
+// Station contains informations about the station
+type Station struct {
+  Name string
   StreamURL string
-  EpgByDays map[string] []EpgEntry
+  EpgEntries []*EpgEntry
 }
 
 // EpgEntry contains informations about a specific program
 type EpgEntry struct {
   Name string
   SubTitle string
-  StartTime string
-  EndTime string
+  StartTime time.Time
+  EndTime time.Time
 }
 
 // FetchDocument fetches the website and returns a goquery Document
@@ -56,85 +57,115 @@ func FetchDocument(url string) (*goquery.Document, error) {
     if err != nil {
       log.Fatal(err)
     }
+
     return doc, nil
 }
 
 // Tidy cleans up old data
-func (sm *StationMap) Tidy() error {
+func (sc *StationController) Tidy() error {
   now := time.Now()
-  del := []string{}
-  for date := range sm.Dates {
-    then, err := time.Parse(DateFormat, date)
-    if err != nil {
-      return err
+
+  for _, sm := range sc.Stations {
+    cleanedEntries := []*EpgEntry{}
+
+    for _, epg := range sm.EpgEntries {
+      if now.Before(epg.EndTime) {
+        cleanedEntries = append(cleanedEntries, epg)
+      }
     }
-    if now.After(then.Add(time.Hour * 24.0)) {
-      del = append(del, date)
-    }
+
+    sm.EpgEntries = cleanedEntries
   }
 
-  for _, d := range del {
-    delete(sm.Dates, d)
-    for _, stationData := range sm.Stations {
-      delete(stationData.EpgByDays, d)
-    }
-  }
   return nil
 }
 
-// LoadEpgByDate fetches the data for a given date
-func (sm *StationMap) LoadEpgByDate(date []string) error {
-  for _, currentDate := range date {
-    _, alreadyHasData := sm.Dates[currentDate]
-    if alreadyHasData {
-      continue
-    }
-    sm.Dates[currentDate] = true
-
-    doc, err := FetchDocument(fmt.Sprintf(EpgURL, currentDate))
+// UpdateStationsByDates updates the stations with data from the given dates
+func (sc *StationController) UpdateStationsByDates(date []time.Time) error {
+  for _, fetchDate := range date {
+    doc, err := FetchDocument(fmt.Sprintf(EpgURL, fetchDate.Format(DateFormat)))
     if err != nil {
       log.Fatal(err)
     }
 
     doc.Find("section.b-epg-timeline").Each(func(i int, s *goquery.Selection) {
-      stationName := strings.Fields(s.Find("h3").First().Text())[0]
-      lowerStationName := strings.ToLower(stationName)
+      currentStation := &Station{}
 
-      _, ok := config.StationURLS[lowerStationName]
-      if !ok {
-        log.Warnf("Can't find stream url for %s in config. Have to skip this one...\n", lowerStationName)
+      stationName := strings.Fields(s.Find("h3").First().Text())[0]
+
+      // Check if we know this station already
+      for _, station := range sc.Stations {
+        if station.Name == stationName {
+          currentStation = station
+          break
+        }
+      }
+
+      if currentStation.Name == "" {
+        lowerStationName := strings.ToLower(stationName)
+
+        _, ok := config.StationURLS[lowerStationName]
+        if !ok {
+          log.Warnf("Can't find stream url for %s in config. Have to skip this one...\n", lowerStationName)
+          return
+        }
+
+        currentStation = &Station{
+          Name: stationName,
+          StreamURL: config.StationURLS[lowerStationName],
+          EpgEntries: []*EpgEntry{},
+        }
+
+        sc.Stations = append(sc.Stations, currentStation)
+      }
+
+      newEpgEntries, err := parseEPG(fetchDate, s)
+      if err != nil {
+        log.Errorf("An error occured while parsing the epg data for %s: %s\n", stationName, err)
         return
       }
 
-      epg, err := parseEPG(s)
-      if err != nil {
-        log.Fatal(err)
+      for _, newEntry := range newEpgEntries {
+        currentStation.EpgEntries = append(currentStation.EpgEntries, newEntry)
       }
-
-      stationData, ok := sm.Stations[stationName]
-      if !ok {
-        stationData = StationData{
-          StreamURL: config.StationURLS[lowerStationName],
-          EpgByDays: map[string] []EpgEntry{},
-        }
-        sm.Stations[stationName] = stationData
-      }
-
-      stationData.EpgByDays[currentDate] = epg
     })
   }
+
   return nil
 }
 
-func parseEPG(s *goquery.Selection) ([]EpgEntry, error) {
-  var entries []EpgEntry
+func setTimeToDate(t string, d time.Time) (time.Time, error) {
+    hhmm := strings.Split(t, ":")
+    timeHour, err := strconv.Atoi(hhmm[0])
+    if err != nil {
+      return d, err
+    }
+    timeMinute, err := strconv.Atoi(hhmm[1])
+    if err != nil {
+      return d, err
+    }
+    return time.Date(d.Year(), d.Month(), d.Day(), timeHour, timeMinute, 0, 0, d.Location()), nil
+}
+
+func parseEPG(date time.Time, s *goquery.Selection) ([]*EpgEntry, error) {
+  var entries []*EpgEntry
 
   s.Find("li").Each(func(i int, v *goquery.Selection) {
     timeFields := strings.Fields(v.Find("span.time").First().Text())
     if len(timeFields) != 3 {
       return
     }
-    startTime, endTime := timeFields[0], timeFields[2]
+    startTimeString, endTimeString := timeFields[0], timeFields[2]
+
+    startTime, err := setTimeToDate(startTimeString, date)
+    if err != nil {
+      return
+    }
+
+    endTime, err := setTimeToDate(endTimeString, date)
+    if err != nil {
+      return
+    }
 
     videoName, found := v.Find("a").First().Attr("aria-label")
     if !found {
@@ -147,7 +178,7 @@ func parseEPG(s *goquery.Selection) ([]EpgEntry, error) {
     }
 
     var dialogData map[string]interface{}
-    err := json.Unmarshal([]byte(dialog), &dialogData)
+    err = json.Unmarshal([]byte(dialog), &dialogData)
     if err != nil {
       return
     }
@@ -159,11 +190,11 @@ func parseEPG(s *goquery.Selection) ([]EpgEntry, error) {
 
     subtitle := doc.Find("h3.overlay-subtitle").Text()
 
-    entry := EpgEntry{
+    entry := &EpgEntry{
+      Name: videoName,
       SubTitle: subtitle,
       StartTime: startTime,
       EndTime: endTime,
-      Name: videoName,
     }
     entries = append(entries, entry)
   })

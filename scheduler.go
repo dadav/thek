@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -18,45 +17,40 @@ var DateFormat = "2006-01-02"
 
 // WatchStreams starts the daemon
 func WatchStreams() error {
-  var epgTime string
+  var epgTime time.Time
   var err error
 
   alreadyChecked := make(map[string]bool)
-  stations := StationMap{
-    Stations: map[string]StationData{},
-    Dates: map[string]bool{},
-  }
+  controller := &StationController{}
 
   log.Info("Starting the main loop")
 
   for {
     now := time.Now()
-    currentDate := now.Format(DateFormat)
 
-    if epgTime != currentDate {
-      tomorrow := now.Add(time.Hour * 24).Format(DateFormat)
-      log.Infof("Updating epg data for %s and %s\n", currentDate, tomorrow)
-      err = stations.LoadEpgByDate([]string{currentDate, tomorrow})
+    if epgTime.Day() != now.Day() {
+      tomorrow := now.Add(time.Hour * 24)
+      log.Infof("Updating epg data for %s and %s\n", now.Format(DateFormat), tomorrow.Format(DateFormat))
+      err = controller.UpdateStationsByDates([]time.Time{now, tomorrow})
       if err != nil {
         return err
       }
-      epgTime = currentDate
+      epgTime = now
       log.Info("Cleaning up some old data (if there is any)")
-      stations.Tidy()
+      controller.Tidy()
     }
 
     // Check if we need to schedule some recording for today
     for _, req := range config.RecordingTasks {
-      for stationName, stationData := range stations.Stations {
+      for _, station := range controller.Stations {
         lowerReqStationName := strings.ToLower(req.Station)
-        lowerStationName := strings.ToLower(stationName)
+        lowerStationName := strings.ToLower(station.Name)
 
         if lowerReqStationName != "" && (lowerReqStationName != lowerStationName) {
           continue
         }
 
-        for _, epgEntries := range stationData.EpgByDays {
-          for _, show := range epgEntries {
+          for _, show := range station.EpgEntries {
             lowerShowName := strings.ToLower(show.Name)
             lowShowSubtitle := strings.ToLower(show.SubTitle)
             lowerReqShowKeywords := strings.ToLower(req.ShowKeywords)
@@ -65,26 +59,6 @@ func WatchStreams() error {
               uniqueKey := fmt.Sprintf("%s_-_%s", show.Name, show.SubTitle)
               if _, ok := alreadyChecked[uniqueKey]; !ok {
                 alreadyChecked[uniqueKey] = true
-
-                hhmmStart := strings.Split(show.StartTime, ":")
-                hhStart, err := strconv.Atoi(hhmmStart[0])
-                if err != nil {
-                  return err
-                }
-                mmStart, err := strconv.Atoi(hhmmStart[1])
-                if err != nil {
-                  return err
-                }
-
-                hhmmEnd := strings.Split(show.EndTime, ":")
-                hhEnd, err := strconv.Atoi(hhmmEnd[0])
-                if err != nil {
-                  return err
-                }
-                mmEnd, err := strconv.Atoi(hhmmEnd[1])
-                if err != nil {
-                  return err
-                }
 
                 safetyStr := config.Defaults.DefaultSafetyDuration
                 if req.SafetyDuration != "" {
@@ -95,8 +69,8 @@ func WatchStreams() error {
                   return err
                 }
 
-                showStart := time.Date(now.Year(), now.Month(), now.Day(), hhStart, mmStart, 0, 0, now.Location()).Add(-safety)
-                showEnd := time.Date(now.Year(), now.Month(), now.Day(), hhEnd, mmEnd, 0, 0, now.Location()).Add(safety)
+                showStart := show.StartTime.Add(-safety)
+                showEnd := show.EndTime.Add(safety)
                 showDuration := showEnd.Sub(showStart)
 
                 outDir := config.Defaults.DefaultOutputDir
@@ -135,7 +109,7 @@ func WatchStreams() error {
                   showDuration = showEnd.Sub(now)
                   go func(url, outFile string, duration time.Duration) {
                     RecordVideo(url, outFile, duration)
-                  }(stationData.StreamURL, out, showDuration)
+                  }(station.StreamURL, out, showDuration)
                   log.Infof("Started recording of \"%s (%s)\"\n", show.Name, show.SubTitle)
                 } else if now.Before(showStart) {
                   // There is still some time left, sleep, then record
@@ -144,13 +118,12 @@ func WatchStreams() error {
                     time.Sleep(sleepTime)
                     log.Infof("Starting recording of \"%s (%s)\"\n", showName, subTitle)
                     RecordVideo(url, outFile, duration)
-                  }(stationData.StreamURL, out, show.Name, show.SubTitle, showDuration)
+                  }(station.StreamURL, out, show.Name, show.SubTitle, showDuration)
                   log.Infof("Scheduled recording of \"%s (%s)\". Starts in %s\n", show.Name, show.SubTitle, sleepTime)
                 }
               }
             }
           }
-        }
       }
     }
     nextDaySleepTime := time.Date(now.Year(),  now.Month(), now.Day(), 0, 1, 0, 0, now.Location()).Add(time.Hour * 24).Sub(now)
