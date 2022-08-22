@@ -41,15 +41,14 @@ The tool requires ffmpeg to work properly
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&thek.ConfigPath, "config", "c", "config.yaml", "Path to the config")
-	rootCmd.PersistentFlags().BoolVarP(&thek.EnableDebugging, "debug", "d", false, "Enable debug mode")
-	rootCmd.PersistentFlags().BoolVarP(&thek.EnableJSON, "json", "j", false, "Enable json output")
+	rootCmd.PersistentFlags().StringVarP(&thek.ConfigPath, "config", "c", "config.yaml", "path to the config")
+	rootCmd.PersistentFlags().BoolVarP(&thek.EnableDebugging, "debug", "d", false, "enable debug mode")
+	rootCmd.PersistentFlags().BoolVarP(&thek.EnableJSON, "json", "j", false, "enable json output")
 }
 
 // Execute runs the program
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-
 		fmt.Fprintf(os.Stderr, "Whoops, there was an error: %s\n", err)
 		os.Exit(1)
 	}

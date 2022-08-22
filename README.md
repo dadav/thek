@@ -12,18 +12,24 @@ Run `make build && sudo make install`
 
 Adjust the `config.yaml` to your needs and run the binary.
 
-The binary has some these flags:
+The binary has some flags (run `thek -h`):
 
 ```bash
-$ thek -h
-  -config string
-        path to the config yaml file (default "config.yaml")
-  -debug
-        enable debug mode
-  -json
-        enable json output
-  -version
-        just print the version
+thek is a tool to schedule recordings for shows of some german streams.
+
+#########################################
+The tool requires ffmpeg to work properly
+#########################################
+
+Usage:
+  thek [flags]
+
+Flags:
+  -c, --config string   path to the config (default "config.yaml")
+  -d, --debug           enable debug mode
+  -h, --help            help for thek
+  -j, --json            enable json output
+  -v, --version         version for thek
 ```
 
 ## configuration
