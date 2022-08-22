@@ -104,7 +104,7 @@ func (sc *StationController) UpdateStationsByDates(date []time.Time) error {
       if currentStation.Name == "" {
         lowerStationName := strings.ToLower(stationName)
 
-        _, ok := config.StationURLS[lowerStationName]
+        _, ok := CurrentConfig.StationURLS[lowerStationName]
         if !ok {
           log.Warnf("Can't find stream url for %s in config. Have to skip this one...\n", lowerStationName)
           return
@@ -112,7 +112,7 @@ func (sc *StationController) UpdateStationsByDates(date []time.Time) error {
 
         currentStation = &Station{
           Name: stationName,
-          StreamURL: config.StationURLS[lowerStationName],
+          StreamURL: CurrentConfig.StationURLS[lowerStationName],
           EpgEntries: []*EpgEntry{},
         }
 

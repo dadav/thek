@@ -18,7 +18,8 @@ var (
   PrintVersion bool
 )
 
-var config Config
+// CurrentConfig is the current config...
+var CurrentConfig Config
 
 // Config represents the config structure
 type Config struct {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dadav/thek/internal/thek"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -17,32 +18,32 @@ var (
 #########################################
 The tool requires ffmpeg to work properly
 #########################################`,
-	  Version: Version,
+	  Version: thek.Version,
 		Run: func(cmd *cobra.Command, args []string) {
 			var err error
-			SetupLogging(EnableDebugging, EnableJSON)
+			thek.SetupLogging(thek.EnableDebugging, thek.EnableJSON)
 
-			log.Debugf("Loading config file: %s", ConfigPath)
-			err = LoadConfigFromFile(ConfigPath, &config)
+			log.Debugf("Loading config file: %s", thek.ConfigPath)
+			err = thek.LoadConfigFromFile(thek.ConfigPath, &thek.CurrentConfig)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			log.Debugf("Check if %s is available", RecorderBinary)
-			err = CheckRecorder()
+			log.Debugf("Check if %s is available", thek.RecorderBinary)
+			err = thek.CheckRecorder()
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			WatchStreams()
+			thek.WatchStreams()
 		},
 	}
 )
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&ConfigPath, "config", "c", "config.yaml", "Path to the config")
-	rootCmd.PersistentFlags().BoolVarP(&EnableDebugging, "debug", "d", false, "Enable debug mode")
-	rootCmd.PersistentFlags().BoolVarP(&EnableJSON, "json", "j", false, "Enable json output")
+	rootCmd.PersistentFlags().StringVarP(&thek.ConfigPath, "config", "c", "config.yaml", "Path to the config")
+	rootCmd.PersistentFlags().BoolVarP(&thek.EnableDebugging, "debug", "d", false, "Enable debug mode")
+	rootCmd.PersistentFlags().BoolVarP(&thek.EnableJSON, "json", "j", false, "Enable json output")
 }
 
 // Execute runs the program

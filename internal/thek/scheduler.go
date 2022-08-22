@@ -41,7 +41,7 @@ func WatchStreams() error {
     }
 
     // Check if we need to schedule some recording for today
-    for _, req := range config.RecordingTasks {
+    for _, req := range CurrentConfig.RecordingTasks {
       for _, station := range controller.Stations {
         lowerReqStationName := strings.ToLower(req.Station)
         lowerStationName := strings.ToLower(station.Name)
@@ -60,7 +60,7 @@ func WatchStreams() error {
               if _, ok := alreadyChecked[uniqueKey]; !ok {
                 alreadyChecked[uniqueKey] = true
 
-                safetyStr := config.Defaults.DefaultSafetyDuration
+                safetyStr := CurrentConfig.Defaults.DefaultSafetyDuration
                 if req.SafetyDuration != "" {
                   safetyStr = req.SafetyDuration
                 }
@@ -73,7 +73,7 @@ func WatchStreams() error {
                 showEnd := show.EndTime.Add(safety)
                 showDuration := showEnd.Sub(showStart)
 
-                outDir := config.Defaults.DefaultOutputDir
+                outDir := CurrentConfig.Defaults.DefaultOutputDir
                 if req.OutputDir != "" {
                   outDir = req.OutputDir
                 }
@@ -84,7 +84,7 @@ func WatchStreams() error {
 
                 out := filepath.Join(outDir, fmt.Sprintf("%s_-_%s.mkv", slug.Make(show.Name), slug.Make(show.SubTitle)))
                 if _, err := os.Stat(out); err == nil {
-                  existAction := config.Defaults.DefaultFileExistAction
+                  existAction := CurrentConfig.Defaults.DefaultFileExistAction
                   if req.FileExistAction != "" {
                     existAction = req.FileExistAction
                   }

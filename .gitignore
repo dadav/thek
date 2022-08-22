@@ -3,3 +3,4 @@ thek
 thek_arm64
 
 !cmd/*
+!internal/*
